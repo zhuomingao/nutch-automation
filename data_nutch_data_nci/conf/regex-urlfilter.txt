@@ -1,0 +1,235 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# The default url filter.
+# Better for whole-internet crawling.
+
+# Each non-comment, non-blank line contains a regular expression
+# prefixed by '+' or '-'.  The first matching pattern in the file
+# determines whether a URL is included or ignored.  If no pattern
+# matches, the URL is ignored.
+
+# skip file: ftp: and mailto: urls
+-^(file|ftp|mailto):
+
+# skip image and other suffixes we can't yet parse
+# for a more extensive coverage use the urlfilter-suffix plugin
+# [bryanp:] We will use urlfilter-suffix. 
+#-\.(gif|GIF|jpg|JPG|png|PNG|ico|ICO|css|CSS|sit|SIT|eps|EPS|wmf|WMF|zip|ZIP|ppt|PPT|mpg|MPG|xls|XLS|gz|GZ|rpm|RPM|tgz|TGZ|mov|MOV|exe|EXE|jpeg|JPEG|bmp|BMP|js|JS|csv|CSV|qdd|QDD|mobi|epub)$
+
+# skip URLs containing certain characters as probable queries, etc.
+-[?*!@=]
+
+# skip URLs with slash-delimited segment that repeats 3+ times, to break loops
+-.*(/[^/]+)/[^/]+\1/[^/]+\1/
+
+# Percussion...
+-^(http|https)://percussion\.cancer\.gov.*
+
+## Remove intranets
+-^https://staging.*
+-^(http|https)://deaintranet\.nci\.nih\.gov.*
+-^(http|https)://intranet\.dceg\.cancer\.gov.*
+-^(http|https)://intranet\.cancer\.gov.*
+-^(http|https)://ccrintra\.cancer\.gov.*
+-^(http|https)://ncioa.cancer.gov/oa-internet/.*
+-^(http|https)://my.ncifcrf.gov/.*
+-^(http|https)://mynci.cancer.gov/.*
+
+
+## Remove non-production tiers
+-^(http|https)://[^/]*-dev\.(cancer|nci\.nih|ncifcrf)\.gov.*
+-^(http|https)://[^/]*-qa\.(cancer|nci\.nih|ncifcrf)\.gov.*
+-^(http|https)://wwwqa\.cancer\.gov.*
+-^(http|https)://[^/]*-test\.(cancer|nci\.nih|ncifcrf)\.gov.*
+-^(http|https)://[^/]*-staging\.(cancer|nci\.nih|ncifcrf)\.gov.*
+-^(http|https)://[^/]*-stage\.(cancer|nci\.nih|ncifcrf)\.gov.*
+-^(http|https)://[^/]*-new\.(cancer|nci\.nih|ncifcrf)\.gov.*
+-^(http|https)://proteomicsnew\.cancer\.gov.*
+-^(http|https)://preview.cancer.gov.*
+-^(http|https)://(dceg|dcegnew|imaging|proteomics)preview.cancer.gov.*
+-^(http|https)://fr-s-ccr-.*\.ncifcrf\.gov.*
+
+## Old Dead Sites that do not give an error and do not redirect.  (e.g. they show the contents of another site)
+-^(http|https)://occamdirectory.cancer.gov.*
+-^(http|https)://understandingrisk.cancer.gov.*
+-^(http|https)://appliedresearch\.cancer\.gov.*
+-^(http|https)://planning\.cancer\.gov.*
+
+## Weird Things
+-^(http|https)://cs-as-01.ncifcrf.gov.*
+-^(http|https)://cs-as-01.cs.wds.ncifcrf.gov.*
+
+
+## This one holds a special space in this file
+-^(http|https)://schneider.ncifcrf.gov.*
+
+## Plain old excludes
+## Remove the 10000+ database pages of the IBAT
+
+## Weird frederick apps and database.  Many are under abcc subdomains
+-^(http|https)://.*\.abcc\.ncifcrf\.gov.*
+
+
+## App/Portal login
+-^(http|https)://ccrrockland\.cancer\.gov.*
+-^(http|https)://ncifshare\.cancer\.gov.*
+-^(http|https)://ostr\.cancer\.gov.*
+-^(http|https)://rid\.ncifcrf\.gov.*
+
+
+## Sites that are not available outside the firewall based on AWS prototype crawling
+## Some of these are DNS not found, and some are timeouts.  Timeouts are probably
+## internal sites blocked at the firewall
+# cancer.gov urls
+-^(http|https)://(2001|aio|best-practices|cabig|cadp|citations|cpctr|iniatives|mecc|mydctd|ncilistens|ncs|otir|plan2004|researchportfolio|target|www-seer|www3)\.cancer\.gov
+-^(http|https)://www\.(dccps|hints|ncl|supportorgs)\.cancer\.gov
+-^(http|https)://portals\.dceg\.cancer\.gov
+-^(http|https)://ovariancancerprevention\.gog190\.cancer\.gov
+# ncifcrf urls
+-^(http|https)://(atp|ccr|comm|diversity|dtpsearch|epnws1|imaging-analysis-01|kidsday|miportal|mrm|recombineering|saic|saip-remote|spheroid|springfest|wwwbdp|candasec|cognos|costpoint|dtps7)\.ncifcrf\.gov
+-^(http|https)://www\.library\.ncifcrf\.gov
+-^(http|https)://publications-abcc\.ncifcrf\.gov
+
+
+
+-^(http|https)://budgettool.cancer.gov.*
+-^(http|https)://familial-testicular-cancer.cancer.gov.*
+-^(http|https)://icbc.cancer.gov.*
+-^(http|https)://library.ncifcrf.gov.*
+-^(http|https)://li-gis.cancer.gov.*
+-^(http|https)://mcl1.ncifcrf.gov.*
+-^(http|https)://ncccp.cancer.gov.*
+-^(http|https)://npsg.ncifcrf.gov.*
+-^(http|https)://ovariancancer.gog199.cancer.gov.*
+-^(http|https)://popmodels.cancercontrol.cancer.gov.*
+-^(http|https)://ratecalc.cancer.gov.*
+-^(http|https)://sbir-cancercontrol.cancer.gov.*
+
+
+#OCEDMQ
+-^(http|https)://ccrod.cancer.gov.*
+-^(http|https)://apply.cancer.gov.*
+-^(http|https)://legislative.cancer.gov.*
+-^(http|https)://training.cancer.gov.*
+-^(http|https)://cancerresearchideas.cancer.gov/.+
+-^(http|https)://www.cancerresearchideas.cancer.gov/.+
+-^(http|https)://home.ccr.cancer.gov/intra.*
+
+
+#unreachable from outside firewall
+-^(http|https)://tw-01.cs.wds.ncifcrf.gov.*
+
+#unreachable 
+-^(http|https)://ncifinprint.ncifcrf.gov.*
+
+#edrn
+-^(http|https)://edrn.nci.nih.gov/resources/miscellaneous-resources/http.*
+
+
+#ncifrederick
+-^(?i)(http|https)://ncifrederick.cancer.gov/programs.*
+-^(?i)(http|https)://ncifrederick.cancer.gov/research.*
+-^(?i)(http|https)://ncifrederick.cancer.gov/services.*
+-^(?i)(http|https)://ncifrederick.cancer.gov/helpcenter.*
+-^(?i)(http|https)://ncifrederick.cancer.gov/campus.*
+-^(?i)(http|https)://ncifrederick.cancer.gov/careers.*
+-^(?i)(http|https)://ncifrederick.cancer.gov/cad.*
+-^(?i)(http|https)://ncifrederick.cancer.gov/ehs.*
+-^(?i)(http|https)://ncifrederick.cancer.gov/lasp.*
+-^(?i)(http|https)://ncifrederick.cancer.gov/staff.*
+
+#ccr
+-^(?i)(http|https)://ccr.cancer.gov/staff.*
+-^(http|https)://ccr.cancer.gov/node/16950
+
+-^https://surveillance.cancer.gov/help/joinpoint.*
+-^https://edrn.nci.nih.gov/biomarkers.*
+-^https://edrn.nci.nih.gov/collaborative-groups.*
+-^https://edrn.nci.nih.gov/network-consulting-team.*
+-^https://edrn.nci.nih.gov/sites.*
+
+-^https://cbiitsolutions.cancer.gov.*
+
+-^https://www.cancer.gov/publications/dictionaries/cancer-terms/def/.*
+-^https://www.cancer.gov/publications/dictionaries/genetics-dictionary/def/.*
+-^https://www.cancer.gov/publications/dictionaries/cancer-drug/def/.*
+-^https://www.cancer.gov/espanol/publicaciones/diccionario/def/.*
+-^https://www.cancer.gov/about-cancer/treatment/clinical-trials/search/v.*
+-^https://www.cancer.gov/sitemaps/clinicaltrials.xml
+-^https://www.cancer.gov/sitemaps/dictionaries.xml
+
+-^https://seer.cancer.gov/archive.*
+-^https://ocg.cancer.gov/programs/ctd2/supported-reagents.*
+
+-^(http|https)://fr-s-ccr-s.ncifcrf.gov.*
+-^(http|https)://fr-s-ccr-d.ncifcrf.gov.*
+-^(http|https)://cmmicroscopy.ncifcrf.gov.*
+-^(http|https)://electron-s.ncifcrf.gov.*
+-^(http|https)://fr-s-fnlcr-d.ncifcrf.gov.*
+-^(http|https)://fr-s-fnlcr-s.ncifcrf.gov.*
+-^(http|https)://fr-s-spgm-d.ncifcrf.gov.*
+-^(http|https)://fr-s-spgm-d.ncifcrf.gov.*
+-^(http|https)://fr-s-theposter-d.ncifcrf.gov.*
+-^(http|https)://fr-s-theposter-s.ncifcrf.gov.*
+-^(http|https)://fr-s-conference-d.ncifcrf.gov.*
+-^(http|https)://fr-s-conference-s.ncifcrf.gov.*
+-^(http|https)://fr-s-cbstp-d.ncifcrf.gov.*
+-^(http|https)://fr-s-cbstp-s.ncifcrf.gov.*
+-^(http|https)://fscssl-dgtsn01t.ncifcrf.gov.*
+-^(http|https)://fscssl-dgtsn01p.ncifcrf.gov.*
+-^(http|https)://fr-s-libnews-f.ncifcrf.gov.*
+-^(http|https)://fr-s-libnews-s.ncifcrf.gov.*
+-^(http|https)://fr-s-ccr-dweb-s.ncifcrf.gov.*
+-^(http|https)://ncif-staging.ncifcrf.gov.*
+-^(http|https)://ncif-Review.ncifcrf.gov.*
+-^(http|https)://search.ncifcrf.gov.*
+-^(http|https)://sourcecode.ncifcrf.gov.*
+-^(http|https)://whksip-staging.ncifcrf.gov.*
+-^https://assays.cancer.gov.*
+-^https://api.gdc.cancer.gov/data.*
+-^https://www.progressreport.cancer.gov/sites/default/files/archive.*
+-^https://applications.prevention.cancer.gov*
+-^https://www.progressreport.cancer.gov/sites/default/files/archive.*
+-^https://datascience.cancer.gov/image-captcha-generate.*
+-^https://nci60.cancer.gov/publiccompare.*
+-^https://www.cancer.gov/about-nci/organization/ccg/research/structural-genomics/tcga/using-tcga/technology.*
+-^https://api.gdc.cancer.gov.*
+-^https://specimens.cancer.gov.*
+-^https://www.specimens.cancer.gov.*
+-^https://www.specimens.cancer.gov.*
+-^https://imat.cancer.gov/about-imat/grants-awarded.*
+-^https://api.seer.cancer.gov/.*
+-^https://ccrisktool.cancer.gov.*
+-^https://datascience.cancer.gov/comment.*
+-^https://statfund.cancer.gov/toolbox.*
+-^https://www.cancer.gov/node.*
+-^https://datacommons.cancer.gov/sites.*
+-^https://viewer.imaging.datacommons.cancer.gov.*
+-^https://ccr.cancer.gov/image-captcha-generate.*
+-^https://ncif-f5.ncifcrf.gov.*
+-^https://cdas.cancer.gov/files.*
+-^https://seer.cancer.gov/data-software.*
+-^https://edrn.nci.nih.gov/data-and-resources.*
+-^https://www.cancer.gov/ccg/research/structural-genomics/tcga/using-tcga-data/technology.*
+-^.*icalendar
+-^.*captcha.*
+-^https://ncihub.cancer.gov.*
+
+# accept anything else
++.
+
+

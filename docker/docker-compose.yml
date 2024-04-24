@@ -1,0 +1,13 @@
+name: nutch
+services:
+  ocplnutch:
+    stdin_open: true
+    tty: true
+    container_name: cgovnutch
+    env_file:
+      - ./docker.env
+    volumes:
+      - ../crawldata:/data/nutch/crawl_data
+      - ../log:/data/nutch/log
+    image: ocplnutch
+    command: /bin/bash

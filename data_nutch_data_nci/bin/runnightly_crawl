@@ -1,0 +1,8 @@
+#!/bin/bash
+export ELASTICSEARCH_PROTOCOL=http   
+export ELASTICSEARCH_PORT=9250
+export NCIALERT_EMAIL=NCIAppAlerts@mail.nih.gov
+export DEV_EMAIL=gaoz@mail.nih.gov
+sed -i -r "s/ELASTICSEARCH_HOST_NAME/"${ELASTICSEARCH_HOST_NAME}"/g" /data/nutch/conf/index-writers.xml
+sed -i -r "s/INDEX_NAME/"${INDEX_NAME}"/g" /data/nutch/conf/index-writers.xml
+/data/nutch/bin/nightly_crawl

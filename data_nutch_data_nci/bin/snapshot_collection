@@ -1,0 +1,205 @@
+#!/bin/bash
+USAGE="usage: snapshot_colection"
+
+
+if [ -z "$ELASTICSEARCH_PROTOCOL" ]; then echo "ELASTICSEARCH_PROTOCOL not set, aborting."; exit 1; fi
+if [ -z "$ELASTICSEARCH_PORT" ]; then echo "ELASTICSEARCH_PORT not set, aborting."; exit 1; fi
+
+
+
+#####################################################################################
+# Constants
+#####################################################################################
+
+export NUTCH_USER=nutch
+export THIS_SCRIPT_NAME=`basename "$0"`   # e.g. "snapshot_collection"
+export THIS_HOST_NAME=`uname -n`          # e.g. "ncias-s1234-v.nci.nih.gov"
+declare -i DEBUG_MODE=0                   # set to anything intiger greater than 0 to enable debugging output to log file and STDOUT
+
+# Collection Directories
+export COLLECTION_BASE_DIR=/data/nutch
+export COLLECTION_TMP_DIR=$COLLECTION_BASE_DIR/tmp
+export COLLECTION_LOG_DIR=$COLLECTION_BASE_DIR/log
+export COLLECTION_BIN_DIR=$COLLECTION_BASE_DIR/bin
+
+export COLLECTION_CURRENT_WORKING_DIR=$COLLECTION_TMP_DIR
+
+# Files
+export LOG_FILE=$COLLECTION_LOG_DIR/snapshot_collection.log
+
+
+# Executable Files
+export CURL=/usr/bin/curl
+
+#Email
+if [[ $THIS_HOST_NAME == ncias-p* ]]
+then 
+    export NOTIFICATION_EMAIL_RECIPIENTS=$NCIALERT_EMAIL
+else 
+    export NOTIFICATION_EMAIL_RECIPIENTS=$DEV_EMAIL
+fi
+
+
+# Curl Settings
+export CURL_CONNECT_TIMEOUT=60
+export CURL_MAX_TIME=3600
+
+
+# Snapshot Collection Settings
+export API_ENDPOINT_PATH=/_snapshot/cgov_backup/sitewidesearch_
+export QUERY_STRING="wait_for_completion=true"
+
+
+
+#####################################################################################
+# Variables
+#####################################################################################
+
+# None
+
+#####################################################################################
+# Functions
+#####################################################################################
+
+#####################################################################################
+#
+# logger function
+#
+# Call this function to write to the log file LOG_FILE
+#
+
+function logger
+{
+  if [ $# -gt 0 ]; then
+    echo "[$(date +"%Y%m%d-%H:%M:%S") $THIS_SCRIPT_NAME] $@" >> $LOG_FILE
+    echo "[$(date +"%Y%m%d-%H:%M:%S") $THIS_SCRIPT_NAME] $@"
+  else
+    while read data
+    do
+      echo "[$(date +"%Y%m%d-%H:%M:%S") $THIS_SCRIPT_NAME] $data" >> $LOG_FILE
+      echo "[$(date +"%Y%m%d-%H:%M:%S") $THIS_SCRIPT_NAME] $data"
+    done
+  fi
+}
+
+#####################################################################################
+#
+# debug function
+#
+# Call this function to log DEBUG info if DEBUG_MODE is set to greater than 0.
+#
+
+function debug
+{
+  if [[ "$DEBUG_MODE" -gt 0 ]]; then
+    logger "DEBUG: $@"
+  fi
+}
+
+
+####################################################################################
+#
+# exit_on_error function
+#
+# Call this function to exit this script if an error is encountered.  This function
+# will:
+#         1) Send an email to the NOTIFICATION_EMAIL_RECIPIENTS.
+#         2) Log the exit event and the line numebr that this function was called at
+#            in the main body of the script to the NIGHTLY_CRAWL_LOG_FILE.
+#         3) exit the script with an error code of 1.
+
+function exit_on_error
+{
+  EXIT_LINE_NUMBER=$1
+
+  email_notification "exited after error at line number $1"  "ERROR: $@"
+
+  logger $2
+  logger "ERROR: Exiting $THIS_SCRIPT_NAME after error with exit code 1 at line number: $1. Goodbye."
+
+  exit 1
+}
+
+
+#####################################################################################
+#
+# email_notification function
+#
+# This function will send a notification email to NOTIFICATION_EMAIL_RECIPIENTS.
+#
+
+function email_notification
+{
+  SUBJECT=$1
+  MESSAGE=$2
+
+  SUBJECT_FINAL="$THIS_SCRIPT_NAME on $THIS_HOST_NAME: $SUBJECT"
+  MESSAGE_FINAL="$THIS_SCRIPT_NAME on $THIS_HOST_NAME at $(date +"%Y%m%d-%H:%M:%S"): $MESSAGE"
+
+  MIME="MIME-Version: 1.0\nContent-Type: text/html\n"
+  echo -e "To: $NOTIFICATION_EMAIL_RECIPIENTS\nSubject: $SUBJECT_FINAL\n$MIME\n\n$MESSAGE_FINAL" | sendmail -S $SMTP_SERVER -f "nutch@nih.gov" -t 
+
+
+  if (( $? )) ; then
+    logger "ERROR: email_notification: mailx exited with non-zero status code $? while trying to send: Subject: $SUBJECT_FINAL, Message: $MESSAGE_FINAL"
+  fi
+}
+
+#####################################################################################
+# Script Main Body
+#####################################################################################
+
+
+#####################################################################################
+#
+# Intro
+#
+
+logger "INFO: Hi.  This is the start of the $THIS_SCRIPT_NAME script."
+
+
+######################################################################################
+#
+# Set current working directory to COLLECTION_CURRENT_WORKING_DIR
+#
+
+cd $COLLECTION_CURRENT_WORKING_DIR
+
+logger "INFO: The current working directory is $(pwd)"
+
+
+
+######################################################################################
+#
+# Snapshot the collection
+
+export SNAPSHOT_DATE_TIME_STAMP=`date +"%Y%m%d_%H%M%S"`
+debug "SNAPSHOT_DATE_TIME_STAMP=$SNAPSHOT_DATE_TIME_STAMP"
+
+
+#echo "$CURL --connect-timeout $CURL_CONNECT_TIMEOUT --max-time $CURL_MAX_TIME -XPUT 'http://$ELASTICSEARCH_HOST_NAME:9200$API_ENDPOINT_PATH$SNAPSHOT_DATE_TIME_STAMP?$QUERY_STRING' --data '{
+#  "indices": "cgov",
+#  "ignore_unavailable": "true",
+#  "include_global_state": false
+#}'"
+
+
+$CURL --insecure --connect-timeout $CURL_CONNECT_TIMEOUT --max-time $CURL_MAX_TIME -XPUT $ELASTICSEARCH_PROTOCOL://$ELASTICSEARCH_HOST_NAME:$ELASTICSEARCH_PORT$API_ENDPOINT_PATH$SNAPSHOT_DATE_TIME_STAMP?$QUERY_STRING --user "$USER_NAME:$PASSWORD" -H 'Content-Type: application/json' --data '{
+  "indices": "cgov",
+  "ignore_unavailable": "true",
+  "include_global_state": false
+}'
+exit_status=$?
+
+if (( $exit_status )) ; then
+  logger "ERROR: Snapshot The Collection: $CURL exited with non-zero status code $exit_status"
+  exit_on_error $LINENO "ERROR: Snapshot The Collection:: $CURL exited with non-zero status code $exit_status"
+fi
+
+
+
+
+logger "INFO: $THIS_SCRIPT_NAME has completed successfully.  Now exiting with exit code 0"
+
+exit 0
+

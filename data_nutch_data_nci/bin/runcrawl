@@ -1,0 +1,76 @@
+#!/bin/bash
+#
+# Small wrapper script to set Nutch environment variables
+#
+#
+
+sed -i -r "s/ELASTICSEARCH_HOST_NAME/"${ELASTICSEARCH_HOST_NAME}"/g" /data/nutch/conf/index-writers.xml
+sed -i -r "s/INDEX_NAME/"${INDEX_NAME}"/g" /data/nutch/conf/index-writers.xml
+
+cygwin=false
+case "`uname`" in
+CYGWIN*) cygwin=true;;
+esac
+
+# resolve links - $0 may be a softlink
+THIS="$0"
+while [ -h "$THIS" ]; do
+  ls=`ls -ld "$THIS"`
+  link=`expr "$ls" : '.*-> \(.*\)$'`
+  if expr "$link" : '.*/.*' > /dev/null; then
+    THIS="$link"
+  else
+    THIS=`dirname "$THIS"`/"$link"
+  fi
+done
+
+
+# Find out where we were called from, this is our home.
+CRAWL_DIR="`dirname "$THIS"`"
+CRAWL_HOME="`cd "$CRAWL_DIR/.." ; pwd`"
+
+# Nutch Java Heapsize @ 4gb
+NUTCH_HEAPSIZE=4096
+# Local Nutch Log dir
+NUTCH_LOG_DIR="$CRAWL_HOME/log"
+# Local Nutch Conf Dir
+NUTCH_CONF_DIR="$CRAWL_HOME/conf"
+
+# Export the vars so the real crawlscript can get em
+export NUTCH_HEAPSIZE NUTCH_LOG_DIR NUTCH_CONF_DIR
+
+INDEXFLAG=false
+JAVA_PROPERTIES=""
+while [[ $# > 0 ]]
+do
+    case $1 in
+        -i|--index)
+            INDEXFLAG=true
+            shift
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
+if [[ $# != 1 ]]; then
+    echo "Usage: runcrawl [-i|--index] <Num Rounds>"
+    echo -e "\t-i|--index\tIndexes crawl results into a configured indexer"
+    echo -e "\tNum Rounds\tThe number of rounds to run this crawl for"
+    exit 1
+fi
+
+LIMIT="$1"
+
+
+# Find out where crawl is
+NUTCH_CRAWL="`which crawl`"
+
+COMMAND="$NUTCH_CRAWL"
+if $INDEXFLAG; then 
+  COMMAND="$COMMAND --index"
+fi
+COMMAND="$COMMAND -s $NUTCH_CONF_DIR/seeds.txt $CRAWL_HOME/crawl_data $LIMIT"
+
+$COMMAND 

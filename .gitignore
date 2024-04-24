@@ -1,0 +1,9 @@
+**/.DS_Store
+crawldata/segments/**
+crawldata/segments/**/*
+crawldata/linkdb/**
+crawldata/linkdb/**/*
+crawldata/crawldb/**
+crawldata/crawldb/**/*
+log/*
+docker/docker.env

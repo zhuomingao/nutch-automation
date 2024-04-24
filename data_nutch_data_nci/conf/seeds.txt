@@ -1,0 +1,81 @@
+## Main CGov Site to Start
+https://www.cancer.gov/sitemaps/pageinstructions.xml	nutch.score=9	nutch.fetchInterval=50400
+https://www.cancer.gov/sitemaps/dynamiclistingpages.xml
+https://www.cancer.gov/rare-brain-spine-tumor/sitemap.xml	nutch.score=8	nutch.fetchInterval=50400
+https://www.cancer.gov/nano/sitemap.xml	nutch.score=8	nutch.fetchInterval=50400
+https://www.cancer.gov/pediatric-adult-rare-tumor/sitemap.xml	nutch.score=8	nutch.fetchInterval=50400
+https://www.cancer.gov/connect-prevention-study/sitemap.xml	nutch.score=8	nutch.fetchInterval=50400
+https://sbir.cancer.gov/sitemap.xml	nutch.score=8	nutch.fetchInterval=50400
+https://dceg.cancer.gov/sitemap.xml	nutch.score=10	nutch.fetchInterval=50400
+https://techtransfer.cancer.gov/sitemap.xml	nutch.score=8	nutch.fetchInterval=50400	
+https://www.cancer.gov/ccg/sitemap.xml	nutch.score=10	nutch.fetchInterval=50400
+https://nationalcancerplan.cancer.gov/sitemap.xml
+https://prescancerpanel.cancer.gov/sitemap-0.xml
+https://prescancerpanel.cancer.gov/sitemap-index.xml
+https://www.cancer.gov/research/participate/clinical-trials
+
+
+## Divisional Sites
+https://ccr.cancer.gov/
+http://dctd.cancer.gov/
+https://cancercontrol.cancer.gov/
+https://dcb.nci.nih.gov/
+https://prevention.cancer.gov/
+http://deainfo.nci.nih.gov/
+
+
+## DCCPS sites
+https://staffprofiles.cancer.gov/brp/prgmStaffHome.do
+https://staffprofiles.cancer.gov/brp/granteeList.do
+https://grantees-cancercontrol.cancer.gov/od/investigatorList.do
+https://maps.cancer.gov/overview/index.jsp
+https://maps.cancer.gov/overview/map/index.jsp
+
+
+## Other OCPL Managed sites with search
+http://cam.cancer.gov/
+https://cancergenome.nih.gov/
+https://proteomics.cancer.gov/
+https://imaging.cancer.gov/
+
+
+## Other NCI Sites where the homepages should be refreshed more frequently
+https://seer.cancer.gov/
+
+## Other Sites/seed pages that should get the default re-fetch interval
+https://ncifrederick.cancer.gov/
+https://frederick.cancer.gov/
+https://www.teamsciencetoolkit.cancer.gov/Public/Home.aspx
+http://atbcstudy.cancer.gov/
+http://biospecimens.cancer.gov/default.asp
+http://breastscreening.cancer.gov/
+http://cancercontrolplanet.cancer.gov/
+http://chornobyl.cancer.gov/
+http://ctep.cancer.gov/
+https://cbiit.nci.nih.gov/
+https://edrn.nci.nih.gov/
+http://emice.nci.nih.gov/
+https://epi.grants.cancer.gov/
+http://healthcaredelivery.cancer.gov/
+https://hints.cancer.gov/
+http://innovation.cancer.gov/
+http://li-gis.cancer.gov/
+https://mouserepository.cancer.gov/
+http://nano.cancer.gov/
+http://ncl.cancer.gov/
+https://ocg.cancer.gov/
+http://marrowfailure.cancer.gov/
+http://ncioa.cancer.gov/oa-internet/
+https://resresources.nci.nih.gov/
+http://smokefree.gov/
+http://women.smokefree.gov/
+https://teen.smokefree.gov/
+http://espanol.smokefree.gov/
+https://progressreport.cancer.gov/
+http://surveillance.cancer.gov/
+http://statfund.cancer.gov/
+https://visualsonline.cancer.gov/
+http://cancerdiagnosis.nci.nih.gov/
+https://hcip.nci.nih.gov/hcip/
+http://iotftraining.nci.nih.gov/
+

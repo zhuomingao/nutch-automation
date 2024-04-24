@@ -1,0 +1,281 @@
+#!/bin/bash
+USAGE="usage: delete_old_snapshots"
+
+if [ -z "$ELASTICSEARCH_PROTOCOL" ]; then echo "ELASTICSEARCH_PROTOCOL not set, aborting."; exit 1; fi
+if [ -z "$ELASTICSEARCH_PORT" ]; then echo "ELASTICSEARCH_PORT not set, aborting."; exit 1; fi
+
+#####################################################################################
+# Constants
+#####################################################################################
+
+export NUTCH_USER=nutch
+export THIS_SCRIPT_NAME=`basename "$0"`   # e.g. "nightly_crawl"
+export THIS_HOST_NAME=`uname -n`          # e.g. "ncias-s1234-v.nci.nih.gov"
+declare -i DEBUG_MODE=0                   # set to any intiger greater than 0 to enable debugging output to log file and STDOUT
+
+# Collection Directories
+export COLLECTION_BASE_DIR=/data/nutch
+export COLLECTION_TMP_DIR=$COLLECTION_BASE_DIR/tmp
+export COLLECTION_LOG_DIR=$COLLECTION_BASE_DIR/log
+export COLLECTION_BIN_DIR=$COLLECTION_BASE_DIR/bin
+
+export COLLECTION_CURRENT_WORKING_DIR=$COLLECTION_TMP_DIR
+
+# Files
+export LOG_FILE=$COLLECTION_LOG_DIR/delete_old_snapshots.log
+
+# Executable Files
+export CURL=/usr/bin/curl
+#export NODE=/usr/bin/node
+
+# Curl Settings
+export CURL_CONNECT_TIMEOUT=60
+export CURL_MAX_TIME=3600
+
+# Email
+if [[ $THIS_HOST_NAME == ncias-p* ]]
+then 
+    export NOTIFICATION_EMAIL_RECIPIENTS=$NCIALERT_EMAIL
+else 
+    export NOTIFICATION_EMAIL_RECIPIENTS=$DEV_EMAIL
+fi
+
+# Node.js Settings
+
+
+
+# Set up env
+#export PATH=/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/sbin:/home/nutch/bin
+
+
+# delete_old_snapshots Constants
+export DATE_TIME_STAMP=`date +"%Y%m%d_%H%M%S"`
+
+
+#####################################################################################
+# Variables
+#####################################################################################
+
+export list_of_old_snapshots=""
+
+
+#####################################################################################
+# Functions
+#####################################################################################
+
+#####################################################################################
+#
+# logger function
+#
+# Call this function to write to the log file
+#
+
+function logger
+{
+  if [ $# -gt 0 ]; then
+    echo "[$(date +"%Y%m%d-%H:%M:%S") $THIS_SCRIPT_NAME] $@" >> $LOG_FILE
+    echo "[$(date +"%Y%m%d-%H:%M:%S") $THIS_SCRIPT_NAME] $@"
+  else
+    while read data
+    do
+      echo "[$(date +"%Y%m%d-%H:%M:%S") $THIS_SCRIPT_NAME] $data" >> $LOG_FILE
+      echo "[$(date +"%Y%m%d-%H:%M:%S") $THIS_SCRIPT_NAME] $data"
+    done
+  fi
+}
+
+#####################################################################################
+#
+# debug function
+#
+# Call this function to log DEBUG info if DEBUG_MODE is set to greater than 0.
+#
+
+function debug
+{
+  if [[ "$DEBUG_MODE" -gt 0 ]]; then
+    logger "DEBUG: $@"
+  fi
+}
+
+
+####################################################################################
+#
+# exit_on_error function
+#
+# Call this function to exit this script if an error is encountered.  This function
+# will:
+#         1) Send an email to the NOTIFICATION_EMAIL_RECIPIENTS.
+#         2) Log the exit event and the line numebr that this function was called at
+#            in the main body of the script to the LOG_FILE.
+#         3) exit the script with an error code of 1.
+
+function exit_on_error
+{
+  EXIT_LINE_NUMBER=$1
+  ERROR_MESSAGE=$2
+
+  email_notification "exited after error at line number $EXIT_LINE_NUMBER"  "ERROR: $ERROR_MESSAGE"
+
+  logger $ERROR_MESSAGE
+  logger "ERROR: Exiting $THIS_SCRIPT_NAME after error with exit code 1 at line number: $EXIT_LINE_NUMBER. Goodbye."
+
+  exit 1
+}
+
+
+#####################################################################################
+#
+# email_notification function
+#
+# This function will send a notification email to NOTIFICATION_EMAIL_RECIPIENTS.
+#
+
+function email_notification
+{
+  SUBJECT=$1
+  MESSAGE=$2
+
+  SUBJECT_FINAL="$THIS_SCRIPT_NAME on $THIS_HOST_NAME: $SUBJECT"
+  MESSAGE_FINAL="$THIS_SCRIPT_NAME on $THIS_HOST_NAME at $(date +"%Y%m%d-%H:%M:%S"): $MESSAGE"
+  MIME="MIME-Version: 1.0\nContent-Type: text/html\n"
+  echo -e "To: $NOTIFICATION_EMAIL_RECIPIENTS\nSubject: $SUBJECT_FINAL\n$MIME\n\n$MESSAGE_FINAL" | sendmail -S $SMTP_SERVER -f "nutch@nih.gov" -t 
+
+  if (( $? )) ; then
+    logger "ERROR: email_notification: mailx exited with non-zero status code $? while trying to send: Subject: $SUBJECT_FINAL, Message: $MESSAGE_FINAL"
+  fi
+}
+
+
+
+
+
+#####################################################################################
+# Script Main Body
+#####################################################################################
+
+
+#####################################################################################
+#
+# Intro
+#
+
+logger "INFO: Hi.  This is the start of the $THIS_SCRIPT_NAME script."
+
+
+#####################################################################################
+#
+# Make sure only user nutch can run this script
+#
+#CURRENT_USER=`id -un`
+#if [ "$CURRENT_USER" != "$NUTCH_USER" ]; then
+#   echo "ERROR: This script must be run as user $NUTCH_USER" 1>&2
+#   exit 1
+#fi
+
+#debug "My user name is $CURRENT_USER"
+#debug "NUTCH_USER should be $NUTCH_USER to continue"
+
+
+######################################################################################
+#
+# Set current working directory to COLLECTION_CURRENT_WORKING_DIR
+#
+
+cd $COLLECTION_CURRENT_WORKING_DIR
+exit_status=$?
+
+if (( $exit_status )) ; then
+  logger "ERROR: Set Curent Working Directory: Could not cd to $COLLECTION_CURRENT_WORKING_DIR.  cd exited with non-zero status code $exit_status"
+  exit_on_error $LINENO "ERROR: Set Curent Working Directory: Could not cd to $COLLECTION_CURRENT_WORKING_DIR.  cd exited with non-zero status code $exit_status"
+fi
+
+
+logger "INFO: The current working directory is now $(pwd)"
+
+
+
+#############################################################################################
+#
+#  Get List of Old Snapshots to be Deleted
+#
+
+
+logger "INFO: Get List of Old Snapshots to be Deleted: Start"
+
+#list_of_old_snapshots=`node $NODE_ESTOOLS_SCRIPT_FILE oldsnapshots -P $ELASTICSEARCH_PROTOCOL -s $ELASTICSEARCH_HOST_NAME -p $ELASTICSEARCH_PORT -n $SNAPSHOT_RETENTION_DAYS cgov_backup`
+date=$(date +%Y-%m-%d -d "$SNAPSHOT_RETENTION_DAYS day ago")
+list_of_old_snapshots=$(curl -s $ELASTICSEARCH_PROTOCOL://$ELASTICSEARCH_HOST_NAME:$ELASTICSEARCH_PORT/_snapshot/cgov_backup/_all --user "$USER_NAME:$PASSWORD" | jq -r --arg date "$date" '.snapshots[] | select(.start_time < $date) | .snapshot ')
+exit_code=$?
+
+
+if (( $exit_code )) ; then
+  logger "ERROR: Get List of Old Snapshots to be Deleted: exited with non-zero status code $exit_code"
+  exit_on_error $LINENO "ERROR: Get List of Old Snapshots to be Deleted:  exited with non-zero status code $exit_code"
+fi
+
+if [[ -z $list_of_old_snapshots ]] ; then   # if list is empty
+  logger "INFO: Get List of Old Snapshots to be Deleted: returned no snapshots.  No snapshots will be deleted.  Exiting now with status code of 0."
+  exit 0
+fi
+
+flat_list_of_old_snapshots=`echo $list_of_old_snapshots | tr '\n' ' '` # merg snapshot list into one line for logging.
+
+logger "INFO: Get List of Old Snapshots to be Deleted: These snapshots will be deleted: $flat_list_of_old_snapshots"
+
+logger "INFO: Get List of Old Snapshots to be Deleted: End"
+
+
+
+
+#############################################################################################
+#
+# Delete Old Snapshots
+#
+
+logger "INFO: Delete Old Snapshots: Start"
+
+for snapshot in $list_of_old_snapshots
+do
+  logger "INFO: Delete Old Snapshots : Now deleting $snapshot"
+
+  curl_json_httpstatuscode=$($CURL --insecure -s -w " %{http_code}" -XDELETE $ELASTICSEARCH_PROTOCOL://$ELASTICSEARCH_HOST_NAME:$ELASTICSEARCH_PORT/_snapshot/cgov_backup/$snapshot --user "$USER_NAME:$PASSWORD") # Note the space before the %.  This is to make sure there is at least one space before the http code.
+  exit_code=$?
+
+  flat_curl_json_httpstatuscode=`echo $curl_json_httpstatuscode | tr '\n' ' '`
+  http_status_code=`echo $flat_curl_json_httpstatuscode | rev | cut -d' ' -f1 | rev`
+  json=`echo $flat_curl_json_httpstatuscode | rev | cut -d' ' -f2- | rev`
+
+  debug "curl exit_code = $exit_code"
+  debug "json = $json"
+  debug "http_status_code = $http_status_code"
+
+
+  if (( $exit_code )) ; then
+    logger "ERROR: Delete Old Snapshots: $CURL exited with non-zero status code $exit_code"
+    exit_on_error $LINENO "ERROR: Delete Old Snapshots: $CURL exited with non-zero status code $exit_code"
+  fi
+
+  if [ $http_status_code -ne "200" ] ; then
+    logger "ERROR: Delete Old Snapshots: $CURL request to $ELASTICSEARCH_HOST_NAME returned an HTTP Status Code of $http_status_code.  A 200 is expected.  Elastic Search JSON returned: $json"
+    exit_on_error $LINENO "ERROR: Delete Old Snapshots: $CURL request to $ELASTICSEARCH_HOST_NAME returned an HTTP Status Code of $http_status_code.  A 200 is expected.  Elastic Search JSON returned: $json"
+  fi
+
+  logger "INFO: Delete Old Snapshots : $snapshot has been deleted"
+
+done
+
+logger "INFO: Delete Old Snapshots : All snapshots have been deleted"
+
+logger "INFO: Delete Old Snapshots : End"
+
+
+
+#############################################################################################
+#
+# Exit the script with status code 0 since there were no errors.  All is well.  Good bye!
+#
+
+
+exit 0
+

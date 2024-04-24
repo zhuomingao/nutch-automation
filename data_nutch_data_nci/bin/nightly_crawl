@@ -1,0 +1,405 @@
+#!/bin/bash
+USAGE="usage: nightly_crawl"
+
+
+if [ -z "$ELASTICSEARCH_PROTOCOL" ]; then echo "ELASTICSEARCH_PROTOCOL not set, aborting."; exit 1; fi
+if [ -z "$ELASTICSEARCH_PORT" ]; then echo "ELASTICSEARCH_PORT not set, aborting."; exit 1; fi
+
+#####################################################################################
+# Constants
+#####################################################################################
+
+
+export NUTCH_USER=nutch
+export THIS_SCRIPT_NAME=`basename "$0"`   # e.g. "nightly_crawl"
+export THIS_HOST_NAME=`uname -n`          # e.g. "ncias-s1234-v.nci.nih.gov"
+declare -i DEBUG_MODE=0                   # set to anything intiger greater than 0 to enable debugging output to log file and STDOUT
+
+# Collection Directories
+export COLLECTION_BASE_DIR=/data/nutch
+export COLLECTION_TMP_DIR=$COLLECTION_BASE_DIR/tmp
+export COLLECTION_LOG_DIR=$COLLECTION_BASE_DIR/log
+export COLLECTION_BIN_DIR=$COLLECTION_BASE_DIR/bin
+export COLLECTION_CRAWL_DATA_DIR=$COLLECTION_BASE_DIR/crawl_data
+export COLLECTION_BACKUP_DIR=$COLLECTION_BASE_DIR/backup
+
+export COLLECTION_CURRENT_WORKING_DIR=$COLLECTION_TMP_DIR
+export COLLECTION_CRAWL_DATA_BACKUP_DIR=$COLLECTION_BACKUP_DIR
+
+# Files
+export NIGHTLY_CRAWL_LOG_FILE=$COLLECTION_LOG_DIR/nightly_crawl.log
+export CRAWL_DATA_BACKUP_FILE_BASE_NAME=$COLLECTION_BACKUP_DIR/crawl_data
+
+# Executable Files
+export RUN_CRAWL=$COLLECTION_BIN_DIR/runcrawl
+export SNAPSHOT_COLLECTION=$COLLECTION_BIN_DIR/snapshot_collection
+export DELETE_OLD_SNAPSHOTS=$COLLECTION_BIN_DIR/delete_old_snapshots
+export CURL=/usr/bin/curl
+
+
+# Email
+if [[ $THIS_HOST_NAME == ncias-p* ]]
+then 
+    export NOTIFICATION_EMAIL_RECIPIENTS=$NCIALERT_EMAIL
+else 
+    export NOTIFICATION_EMAIL_RECIPIENTS=$DEV_EMAIL
+fi
+
+
+# Curl Settings
+export CURL_CONNECT_TIMEOUT=60
+export CURL_MAX_TIME=3600
+
+
+
+# Sanity Check Settings
+declare -i DISK_SPACE_WARN_THRESHOLD=20000000   # In kB. Send a warning email if data disk space drops below this level.
+declare -i DISK_SPACE_ERROR_THRESHOLD=10000000  # In kB. Do not run crawl script if data disk space drops below this level.
+
+# Retention time settings
+export BACKUP_RETENTION_DAYS=1
+export CRAWL_SEGMENT_RETENTION_DAYS=1
+
+
+#####################################################################################
+# Variables
+#####################################################################################
+
+crawl_time="blank"      # output results of /usr/bin/time when running the crawl script.
+
+#####################################################################################
+# Functions
+#####################################################################################
+
+#####################################################################################
+#
+# logger function
+#
+# Call this function to write to the log file NIGHTLY_CRAWL_LOG_FILE
+#
+
+function logger
+{
+  if [ $# -gt 0 ]; then
+    echo "[$(date +"%Y%m%d-%H:%M:%S") $THIS_SCRIPT_NAME] $@" >> $NIGHTLY_CRAWL_LOG_FILE
+    echo "[$(date +"%Y%m%d-%H:%M:%S") $THIS_SCRIPT_NAME] $@"
+  else
+    while read data
+    do
+      echo "[$(date +"%Y%m%d-%H:%M:%S") $THIS_SCRIPT_NAME] $data" >> $NIGHTLY_CRAWL_LOG_FILE
+      echo "[$(date +"%Y%m%d-%H:%M:%S") $THIS_SCRIPT_NAME] $data"
+    done
+  fi
+}
+
+#####################################################################################
+#
+# debug function
+#
+# Call this function to log DEBUG info if DEBUG_MODE is set to greater than 0.
+#
+
+function debug
+{
+  if [[ "$DEBUG_MODE" -gt 0 ]]; then
+    logger "DEBUG: $@"
+  fi
+}
+
+
+####################################################################################
+#
+# exit_on_error function
+#
+# Call this function to exit this script if an error is encountered.  This function
+# will:
+#         1) Send an email to the NOTIFICATION_EMAIL_RECIPIENTS.
+#         2) Log the exit event and the line numebr that this function was called at
+#            in the main body of the script to the NIGHTLY_CRAWL_LOG_FILE.
+#         3) exit the script with an error code of 1.
+
+function exit_on_error
+{
+  EXIT_LINE_NUMBER=$1
+  ERROR_MESSAGE=$2
+
+  email_notification "exited after error at line number $EXIT_LINE_NUMBER"  "ERROR: $ERROR_MESSAGE"
+
+  logger $ERROR_MESSAGE
+  logger "ERROR: Exiting $THIS_SCRIPT_NAME after error with exit code 1 at line number: $EXIT_LINE_NUMBER. Goodbye."
+
+  exit 1
+}
+
+
+#####################################################################################
+#
+# email_notification function
+#
+# This function will send a notification email to NOTIFICATION_EMAIL_RECIPIENTS.
+#
+
+function email_notification
+{
+  SUBJECT=$1
+  MESSAGE=$2
+
+  SUBJECT_FINAL="$THIS_SCRIPT_NAME on $THIS_HOST_NAME: $SUBJECT"
+  MESSAGE_FINAL="$THIS_SCRIPT_NAME on $THIS_HOST_NAME at $(date +"%Y%m%d-%H:%M:%S"): $MESSAGE"
+  MIME="MIME-Version: 1.0\nContent-Type: text/html\n"
+  echo -e "To: $NOTIFICATION_EMAIL_RECIPIENTS\nSubject: $SUBJECT_FINAL\n$MIME\n\n$MESSAGE_FINAL" | sendmail -S $SMTP_SERVER -f "nutch@nih.gov" -t 
+  if (( $? )) ; then
+    logger "ERROR: email_notification: mailx exited with non-zero status code $? while trying to send: Subject: $SUBJECT_FINAL, Message: $MESSAGE_FINAL"
+  fi
+}
+
+
+
+
+
+#####################################################################################
+# Script Main Body
+#####################################################################################
+
+
+#####################################################################################
+#
+# Intro
+#
+
+logger "INFO: Hi.  This is the start of the $THIS_SCRIPT_NAME script."
+
+
+
+
+
+######################################################################################
+#
+# Set current working directory to COLLECTION_CURRENT_WORKING_DIR
+#
+
+cd $COLLECTION_CURRENT_WORKING_DIR
+exit_status=$?
+
+if (( $exit_status )) ; then
+  logger "ERROR: Set Curent Working Directory: Could not cd to $COLLECTION_CURRENT_WORKING_DIR.  cd exited with non-zero status code $exit_status"
+  exit_on_error $LINENO "ERROR: Set Curent Working Directory: Could not cd to $COLLECTION_CURRENT_WORKING_DIR.  cd exited with non-zero status code $exit_status"
+fi
+
+
+logger "INFO: The current working directory is now $(pwd)"
+
+
+######################################################################################
+#
+# Pre Flight Sanity Check
+#
+
+logger "INFO: Start Preflight Sanity Checklist"
+
+# Get the current amount of free disk space in kB on the data file system.
+declare -i DISK_SPACE_AVAILABLE=`df -Pk $COLLECTION_BASE_DIR | tail -1 | awk '{print $4}'`
+
+logger "INFO: Data disk space available for $COLLECTION_BASE_DIR is $DISK_SPACE_AVAILABLE kB"
+
+# Do we have enough space on the data file system to continue?
+#if [[ "$DISK_SPACE_AVAILABLE" -lt "$DISK_SPACE_ERROR_THRESHOLD" ]]; then
+#  exit_on_error $LINENO "ERROR: Not enough data disk space in $COLLECTION_BASE_DIR to continue. Current space available is $DISK_SPACE_AVAILABLE. Must have at least $DISK_SPACE_ERROR_THRESHOLD kB."
+#fi
+
+
+# Are we close to running out of space on the data files system?
+#if [[ "$DISK_SPACE_AVAILABLE" -lt "$DISK_SPACE_WARN_THRESHOLD" ]]; then
+#  logger "WARNING: We are getting low on disk space for $COLLECTION_BASE_DIR.  Some one should do something to fix this."
+#  logger "WARNING: Current space available is $DISK_SPACE_AVAILABLE. Must have at least $DISK_SPACE_ERROR_THRESHOLD kB to run."
+#  logger "WARNING: Please make at least $DISK_SPACE_WARN_THRESHOLD kB free space available to avoid this warning."
+
+#  EMAIL_SUBJECT="WARNING: Low disk space for $COLLECTION_BASE_DIR."
+#  EMAIL_MESSAGE="WARNING: We are getting low on disk space for $COLLECTION_BASE_DIR.  Some one should do something to fix this.  Current space available is $DISK_SPACE_AVAILABLE. Must have at least $DISK_SPACE_ERROR_THRESHOLD kB to run.  Please make at least $DISK_SPACE_WARN_THRESHOLD kB free space available to avoid this warning."
+
+#  email_notification $EMAIL_SUBJECT $EMAIL_MESSAGE
+#fi
+
+logger "INFO: End Preflight Sanity Checklist"
+
+
+
+#############################################################################################
+#
+# Snapshot Search Collection Data
+#
+
+logger "INFO: Start Snapshot of Search Collection Data"
+
+$SNAPSHOT_COLLECTION
+exit_status=$?
+
+
+if (( $exit_status )) ; then
+  logger "ERROR: $SNAPSHOT_COLLECTION exited with non-zero status code $exit_status"
+  exit_on_error $LINENO "ERROR: $SNAPSHOT_COLLECTION exited with non-zero status code $exit_status"
+fi
+
+logger "INFO: End Snapshot of Search Collection Data"
+
+#############################################################################################
+#
+# Delete Old Crawl Data Backups
+#
+# Delete after BACKUP_RETENTION_DAYS
+#
+
+logger "INFO: Start Roll Previous Crawl Data Backups"
+
+
+find $COLLECTION_BACKUP_DIR/crawl_data* -mtime +$BACKUP_RETENTION_DAYS -delete
+exit_status=$?
+
+if (( $exit_status )) ; then
+  logger "ERROR: Delete Old Crawl Data Backups: find exited with non-zero status code $exit_status"
+  exit_on_error $LINENO "ERROR: Delete Old Crawl Data Backups: find exited with non-zero status code $exit_status"
+fi
+
+
+logger "INFO: End Roll Previous Crawl Data Backups"
+
+
+#############################################################################################
+#
+# Backup Crawl Data.
+#
+
+logger "INFO: Backup Crawl Data: Start"
+
+export DATE_TIME_STAMP=`date +"%Y%m%d_%H%M%S"`
+debug "DATE_TIME_STAMP=$DATE_TIME_STAMP"
+
+crawl_dir_basename=`basename $COLLECTION_CRAWL_DATA_DIR`
+
+tar --directory $COLLECTION_BASE_DIR -zcf $CRAWL_DATA_BACKUP_FILE_BASE_NAME-$DATE_TIME_STAMP.tar.gz $crawl_dir_basename
+exit_status=$?
+
+if (( $exit_status )) ; then
+  logger "ERROR: Backup Crawl Data: tar exited with non-zero status code $exit_status"
+  exit_on_error $LINENO "ERROR: Backup Crawl Data: tar exited with non-zero status code $exit_status"
+fi
+
+logger "INFO: Backup Crawl Data: Created backup file $CRAWL_DATA_BACKUP_FILE_BASE_NAME-$DATE_TIME_STAMP.tar"
+logger "INFO: Backup Crawl Data: End"
+
+
+#############################################################################################
+#
+# Fetch Cancer.gov sitemap.xml
+#
+# This will prime the sitemap cache (which is only kept for 5 minutes) on each web server host.
+#
+
+
+#############################################################################################
+#
+# Run Crawl
+#
+
+logger "INFO: Start Run Crawl"
+logger "INFO: Begin output from runcrawl script, if any."
+
+time_output=$( { /usr/bin/time $RUN_CRAWL -i 100 ; } 2>&1 1>>$NIGHTLY_CRAWL_LOG_FILE)  # STDERR is redirected to nightly_crawl log.
+exit_status=$?
+
+if (( $exit_status )) ; then
+  logger "ERROR: Run Crawl: $RUN_CRAWL (or time) exited with non-zero status code $exit_status"
+  exit_on_error $LINENO "ERROR: Run Crawl: $RUN_CRAWL (or time) exited with non-zero status code $exit_status"
+fi
+
+
+logger "INFO: End output from runcrawl script, if any."
+logger "INFO: runcrawl STDERR (if any) and time(1) output = $time_output"
+
+
+logger "INFO: End Run Crawl"
+
+
+#############################################################################################
+#
+# Post Crawl Optimize
+#
+#
+#
+
+logger "INFO: Start Post Crawl Optimize"
+
+$CURL --insecure --connect-timeout $CURL_CONNECT_TIMEOUT --max-time $CURL_MAX_TIME -XPOST "$ELASTICSEARCH_PROTOCOL://$ELASTICSEARCH_HOST_NAME:$ELASTICSEARCH_PORT/cgov/_optimize?max_num_segments=1" >> $NIGHTLY_CRAWL_LOG_FILE 2>&1
+exit_status=$?
+
+if (( $exit_status )) ; then
+  logger "ERROR: Post Crawl Optimize: $CURL exited with non-zero status code $exit_status"
+  exit_on_error $LINENO "ERROR: Post Crawl Optimize: $CURL exited with non-zero status code $exit_status"
+fi
+
+logger "INFO: End Post Crawl Optimize"
+
+
+
+
+#############################################################################################
+#
+# Clean Up Crawl Segments
+#
+
+logger "INFO: Start Clean Up Crawl Segments"
+
+# Don't delete the segmetns dir itself: -mindepth 1
+find $COLLECTION_CRAWL_DATA_DIR/segments -mindepth 1 -mtime +$CRAWL_SEGMENT_RETENTION_DAYS -delete
+exit_status=$?
+
+if (( $exit_status )) ; then
+  logger "ERROR: Clean Up Crawl Segments: find exited with non-zero status code $exit_status"
+  exit_on_error $LINENO "ERROR: Clean Up Crawl Segments: find exited with non-zero status code $exit_status"
+fi
+
+
+logger "INFO: End Clean Up Crawl Segments"
+
+
+
+#############################################################################################
+#
+# Delete Old Snapshots
+#
+
+logger "INFO: Delete Old Snapshots: Start"
+
+$DELETE_OLD_SNAPSHOTS
+exit_status=$?
+
+if (( $exit_status )) ; then
+  logger "ERROR: Delete Old Snapshots: $DELETE_OLD_SNAPSHOTS exited with non-zero status code $exit_status"
+  exit_on_error $LINENO "ERROR: Delete Old Snapshots: $DELETE_OLD_SNAPSHOTS exited with non-zero status code $exit_status"
+fi
+
+logger "INFO: Delete Old Snapshots: End"
+
+
+
+#############################################################################################
+#
+# Nightly Crawl Completed Successfully
+#
+# Send email notification and log that crawl has completed successfully
+#
+
+ALL_IS_WELL_MESSAGE="INFO: $THIS_SCRIPT_NAME has completed successfully."
+
+logger $ALL_IS_WELL_MESSAGE
+email_notification "$THIS_SCRIPT_NAME has completed successfully"  $ALL_IS_WELL_MESSAGE
+
+
+
+#############################################################################################
+#
+# Exit the script with status code 0 since there were no errors.  All is well.  Good bye!
+#
+
+exit 0
+

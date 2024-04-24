@@ -1,0 +1,40 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# config file for urlfilter-domain plugin
+cancer.gov
+brb.nci.nih.gov
+cpfp.nci.nih.gov
+deainfo.nci.nih.gov
+emice.nci.nih.gov
+icbp.nci.nih.gov
+itcr.nci.nih.gov
+ncip.nci.nih.gov
+nih-cbstp.nci.nih.gov
+tmen.nci.nih.gov
+cancerdiagnosis.nci.nih.gov
+cbiit.nci.nih.gov
+cmm.nci.nih.gov
+dcb.nci.nih.gov
+edrn.nci.nih.gov
+electron.nci.nih.gov
+hcip.nci.nih.gov
+icrc.nci.nih.gov
+provocativequestions.nci.nih.gov
+iotftraining.nci.nih.gov
+ncifcrf.gov
+smokefree.gov
+cancergenome.nih.gov
+

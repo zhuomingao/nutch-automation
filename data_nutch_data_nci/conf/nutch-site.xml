@@ -1,0 +1,201 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<!-- Put site-specific property overrides in this file. -->
+
+<configuration>
+
+	<property>
+		<name>http.agent.name</name>
+		<value>CancerGov Web Crawler</value>
+	</property>
+
+	<property>
+	<name>hadoop.tmp.dir</name>
+	<value>/data/nutch/nci1.19/tmp</value>
+	<description>Hadoop temp directory</description>
+	</property>
+
+
+	<property>
+		<name>db.max.outlinks.per.page</name>
+		<value>-1</value>
+		<description>NCI OVERRIDE: NCI has lots of pages that have lots of links (and sitemap.xml is all links).  This is being set to unlimited.</description>
+	</property>
+	
+	<property>
+		<name>db.signature.class</name>
+		<value>org.apache.nutch.crawl.TextProfileSignature</value>
+		<description>NCI OVERRIDE: TextProfileSignature might be going overboard, but the MD5Signature class is resulting in unidentified dupes.</description>
+	</property>
+	
+	<property>
+		<name>db.fetch.interval.default</name>
+		<value>1202400</value>
+		<!--<value>86400</value>-->
+		<description>NCI OVERRIDE: Setting this to about 14 days.  Technically, 14 days minus 2 hrs.  20151113 setting to every night for testing </description>
+	</property>
+
+	<property>
+		<name>db.fetch.interval.max</name>
+		<value>7776000</value>
+		<description>NCI OVERRIDE: The maximum number of seconds between re-fetches of a page(90 days). After this period every page in the db will be re-tried, no matter what is its status.
+		</description>
+	</property>	
+
+	<property>
+		<name>db.fetch.retry.max</name>
+		<value>30</value>
+		<description>NCI OVERRIDE: Things on the network can be sketchy, so I am upping this to a high value so that we do not accidently remove things that are having issues.  A value of 30 *should* basically mean that we should retry the item for about a month before skipping it.</description>
+	</property>	
+
+	<property>
+		<name>http.content.limit</name>
+  		<value>-1</value>
+  		<description>NCI OVERRIDE: CGov pages are too big for the default, so for now we are using unlimited.</description>
+	</property>
+	
+	<property>
+		<name>indexer.max.title.length</name>
+		<value>-1</value>
+		<description>The maximum number of characters of a title that are indexed. A value of -1 disables this check.</description>
+	</property>
+
+
+	<property>
+		<name>http.timeout</name>
+		<value>30000</value>
+		<description>NCI OVERRIDE: Upped to 20sec from 10sec to allow time for www.cancer.gov to generate its sitemap.xml file.</description>
+	</property>
+	
+
+
+
+
+	<property>
+	  <name>fetcher.threads.fetch</name>
+	  <value>50</value>
+	  <description>NCI OVERRIDE: Upping this to 50</description>
+	</property> 
+
+	<property>
+	  <name>fetcher.threads.per.queue</name>
+	  <value>1</value>
+	  <description>This number is the maximum number of threads that should be allowed to access a queue at one time. Replaces
+	    deprecated parameter 'fetcher.threads.per.host'. 
+	[BP] Setting this to 1 so that the delay is honored.  Having this set to 10 threads kills some sites (CCR).
+	[BP] Upping this to 2 so we can override crawl delay for some sites (CCR)
+	  </description>
+	</property> 
+
+	<!-- If fetcher.threads.per.queue == 1 then comment the lines below -->
+	<!--<property>
+	     	  <name>fetcher.server.min.delay</name>
+	  <value>0.3</value>
+	  <description>NCI OVERRIDE: We need to ignore crawl delays in robots.txt for many Drupal sites which are set at 10 sec.  Setting too many threads will kill sites.  This setting acts like fetcher.server.delay, but </description>
+	</property>
+
+	-->
+
+
+	<!-- If fetcher.threads.per.queue == 1 then uncomment the lines below -->
+	   	  <property>
+	  <name>fetcher.server.delay</name>
+	  <value>0.5</value>
+	  <description>NCI OVERRIDE: Attempting this value to not kill slow servers.  Would be nice to set this per host.
+[BP] Setting this to 1 sec delay as we only have 1 thread per site.  This will definately make certain sites *much* slower to crawl.  (CGov would be at least 4000+ seconds...)
+</description>
+	</property> 
+		
+
+
+	<property>
+  		<name>indexer.delete.robots.noindex</name>
+  		<value>true</value>
+  		<description>Whether the indexer will delete documents marked by robots=noindex
+  		</description>
+	</property>
+
+	<property>
+		<name>http.tls.supported.cipher.suites</name>
+		<value>TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_RSA_WITH_AES_256_CBC_SHA256,TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDH_RSA_WITH_AES_256_CBC_SHA384,TLS_DHE_RSA_WITH_AES_256_CBC_SHA256,TLS_DHE_DSS_WITH_AES_256_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA,TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDH_RSA_WITH_AES_256_CBC_SHA,TLS_DHE_RSA_WITH_AES_256_CBC_SHA,TLS_DHE_DSS_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256,TLS_DHE_RSA_WITH_AES_128_CBC_SHA256,TLS_DHE_DSS_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_128_CBC_SHA,TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDH_RSA_WITH_AES_128_CBC_SHA,TLS_DHE_RSA_WITH_AES_128_CBC_SHA,TLS_DHE_DSS_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_RC4_128_SHA,TLS_ECDHE_RSA_WITH_RC4_128_SHA,SSL_RSA_WITH_RC4_128_SHA,TLS_ECDH_ECDSA_WITH_RC4_128_SHA,TLS_ECDH_RSA_WITH_RC4_128_SHA,TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA,TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA,SSL_RSA_WITH_3DES_EDE_CBC_SHA,TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA,TLS_ECDH_RSA_WITH_3DES_EDE_CBC_SHA,SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA,SSL_DHE_DSS_WITH_3DES_EDE_CBC_SHA,SSL_RSA_WITH_RC4_128_MD5,TLS_EMPTY_RENEGOTIATION_INFO_SCSV,TLS_RSA_WITH_NULL_SHA256,TLS_ECDHE_ECDSA_WITH_NULL_SHA,TLS_ECDHE_RSA_WITH_NULL_SHA,SSL_RSA_WITH_NULL_SHA,TLS_ECDH_ECDSA_WITH_NULL_SHA,TLS_ECDH_RSA_WITH_NULL_SHA,SSL_RSA_WITH_NULL_MD5,SSL_RSA_WITH_DES_CBC_SHA,SSL_DHE_RSA_WITH_DES_CBC_SHA,SSL_DHE_DSS_WITH_DES_CBC_SHA,TLS_KRB5_WITH_RC4_128_SHA,TLS_KRB5_WITH_RC4_128_MD5,TLS_KRB5_WITH_3DES_EDE_CBC_SHA,TLS_KRB5_WITH_3DES_EDE_CBC_MD5,TLS_KRB5_WITH_DES_CBC_SHA,TLS_KRB5_WITH_DES_CBC_MD5,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,TLS_AES_128_GCM_SHA256,TLS_AES_128_CCM_8_SHA256,TLS_AES_128_CCM_SHA256</value>
+	<description>add TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384 to defaultCipherSuites in https://github.com/apache/nutch/blob/master/src/plugin/lib-http/src/java/org/apache/nutch/protocol/http/api/HttpBase.java#L325</description>	
+	</property>	
+
+	<property>
+		<name>plugin.includes</name>
+			<value>protocol-http|urlfilter-(regex|domain|suffix)|parse-(html|tika|metatags|replace)|language-identifier|index-(basic|anchor|metadata|replace|more)|indexer-elastic|scoring-opic|urlnormalizer-(pass|regex|basic)</value>
+	</property>	
+
+
+
+
+<property>
+    <name>index.replace.regexp</name>
+    <value>
+        url:searchurl=/(https|http)\:..//
+                
+        title:searchtitle=/=/=/
+
+        hostmatch=www.cancer.gov
+        title:searchtitle=/ - NCI//
+                searchtitle:title=/=/=/
+                searchtitle:searchtitle=/(.*)—Patient Version/$1/2
+                searchtitle:searchtitle=/(.*)—Health Professional Version/$1/2
+                searchtitle:searchtitle=/(.*)—Versión para pacientes/$1/2
+                searchtitle:searchtitle=/(.*)—Versión para profesionales de salud/$1/2
+          
+          
+        #Replace DCEGs Title
+        hostmatch=dceg.cancer.gov
+          title:searchtitle=/ - NCI//
+          searchtitle:title=/=/=/
+
+        #Replace SBIRs Title
+        hostmatch=sbir.cancer.gov
+          title:searchtitle=/ - NCI//
+          searchtitle:title=/=/=/
+
+        #Replace PCPs Title
+        hostmatch=prescancerpanel.cancer.gov
+          title:searchtitle=/ - President's Cancer Panel//
+          searchtitle:title=/=/=/
+
+
+    </value>
+  </property>
+
+
+	<property>
+		<name>metatags.names</name>
+		<value>*</value>
+		<description> Names of the metatags to extract, separated by ','. Use '*' to extract all metatags. Prefixes the names with 'metatag.' in the parse-metadata. For instance to index description and keywords, you need to activate the plugin index-metadata and set the value of the parameter 'index.parse.md' to 'metatag.description,metatag.keywords'.
+		</description>
+	</property>
+
+	<property>
+	  <name>index.parse.md</name>
+	  <value>metatag.dc:description,metatag.description,metatag.keywords,metatag.content-language,metatag.dcterms.type</value>
+	  <description>
+	  Comma-separated list of keys to be taken from the parse metadata to generate fields.
+	  Can be used e.g. for 'description' or 'keywords' provided that these values are generated
+	  by a parser (see parse-metatags plugin)
+	  </description>
+	</property>
+
+
+
+	<property>
+		<name>lang.extraction.policy</name>
+		<value>detect</value>
+		<description>NCI OVERRIDE: We only want to detect the language it it exists in the headers/metatags</description>
+	</property>
+
+
+    
+</configuration>
+
+
+
+
+
